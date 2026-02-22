@@ -9,37 +9,14 @@
 ### Plain-Language Discharge Summaries
 
 * Converts complex discharge notes into easy-to-understand summaries
-* Highlights diagnoses, medications, follow-ups, and warning signs
-
-### Imaging & Lab Report Explanation
-
 * Explains X-ray, CT, MRI, and lab reports in simple terms
-* Provides visual annotations and definitions of medical terminology
+* Highlights diagnoses, medications, follow-ups, and warning signs
 
 ### Privacy-First Design
 
 * Minimal data retention (auto-delete uploads)
 * Encryption in transit and at rest
 * No AI training on patient data
-
----
-
-## System Architecture
-
-**Frontend**
-
-* React / Next.js UI for document upload and explanation display
-
-**Backend**
-
-* Secure API server (Express / SQLite3)
-* Temporary encrypted storage bucket for uploads
-* AI processing layer for summarization and explanation
-
-**AI Layer**
-
-* Large language model with PHI-safe configuration
-* Retrieval-based explanation to reduce hallucinations
 
 ---
 
