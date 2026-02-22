@@ -8,7 +8,7 @@
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 font-sans;
+  @apply bg-sky-50 text-slate-900 font-sans;
 }
 
 .markdown-body {

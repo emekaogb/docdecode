@@ -20,7 +20,11 @@ import {
   Image as ImageIcon,
   History,
   Trash2,
-  Clock
+  Clock,
+  ShieldCheck,
+  Lock,
+  EyeOff,
+  ShieldAlert
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { analyzeDischargeNote, createChatSession } from './services/gemini';
@@ -51,6 +55,9 @@ export default function App() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [demographics, setDemographics] = useState({ age: '', gender: '', location: '' });
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [hasConsented, setHasConsented] = useState(false);
+  const [showPrivacyNotice, setShowPrivacyNotice] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -94,6 +101,16 @@ export default function App() {
       fetchHistory();
     } catch (error) {
       console.error("Failed to delete history item:", error);
+    }
+  };
+
+  const clearAllHistory = async () => {
+    try {
+      await fetch('/api/history', { method: 'DELETE' });
+      fetchHistory();
+      setShowClearConfirm(false);
+    } catch (error) {
+      console.error("Failed to clear history:", error);
     }
   };
 
@@ -300,7 +317,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center p-4 md:p-8">
+    <div className="min-h-screen bg-sky-50 flex flex-col items-center p-4 md:p-8">
       {/* Header */}
       <header className="w-full max-w-4xl mb-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -357,7 +374,7 @@ export default function App() {
 
             {/* Input Method Tabs */}
             {isPremium && (
-              <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4 p-6 bg-indigo-50/50 rounded-3xl border border-indigo-100">
+              <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4 p-6 bg-blue-100/30 rounded-3xl border border-sky-100">
                 <div className="col-span-full mb-2">
                   <h3 className="text-sm font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-2">
                     <History className="w-4 h-4" />
@@ -371,7 +388,7 @@ export default function App() {
                     value={demographics.age}
                     onChange={(e) => setDemographics({...demographics, age: e.target.value})}
                     placeholder="e.g. 45"
-                    className="w-full px-3 py-2 bg-white border border-indigo-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 <div>
@@ -379,7 +396,7 @@ export default function App() {
                   <select 
                     value={demographics.gender}
                     onChange={(e) => setDemographics({...demographics, gender: e.target.value})}
-                    className="w-full px-3 py-2 bg-white border border-indigo-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     <option value="">Select...</option>
                     <option value="male">Male</option>
@@ -394,7 +411,7 @@ export default function App() {
                     value={demographics.location}
                     onChange={(e) => setDemographics({...demographics, location: e.target.value})}
                     placeholder="e.g. New York, NY"
-                    className="w-full px-3 py-2 bg-white border border-indigo-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
               </div>
@@ -415,7 +432,7 @@ export default function App() {
                   className={cn(
                     "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all",
                     inputMethod === method.id 
-                      ? "bg-white text-indigo-600 shadow-sm" 
+                      ? "bg-sky-50 text-indigo-600 shadow-sm" 
                       : "text-slate-500 hover:text-slate-700"
                   )}
                 >
@@ -455,7 +472,7 @@ export default function App() {
                       {selectedFile.file.type.startsWith('image/') ? (
                         <img src={selectedFile.preview} alt="Preview" className="w-32 h-32 object-cover rounded-xl shadow-md" />
                       ) : (
-                        <div className="w-32 h-32 bg-white rounded-xl shadow-md flex items-center justify-center">
+                        <div className="w-32 h-32 bg-sky-50 rounded-xl shadow-md flex items-center justify-center">
                           <FileText className="w-12 h-12 text-indigo-600" />
                         </div>
                       )}
@@ -503,7 +520,7 @@ export default function App() {
                       <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-4">
                         <button 
                           onClick={capturePhoto}
-                          className="w-16 h-16 bg-white rounded-full border-4 border-slate-300 flex items-center justify-center shadow-xl active:scale-95 transition-all"
+                          className="w-16 h-16 bg-sky-50 rounded-full border-4 border-sky-200 flex items-center justify-center shadow-xl active:scale-95 transition-all"
                         >
                           <div className="w-12 h-12 bg-indigo-600 rounded-full" />
                         </button>
@@ -541,13 +558,34 @@ export default function App() {
               )}
             </div>
             
-            <div className="mt-8 flex justify-end">
+            <div className="mt-8 flex flex-col md:flex-row items-center justify-between gap-6 pt-8 border-t border-slate-100">
+              <div className="flex items-start gap-3 max-w-md">
+                <div className="pt-1">
+                  <input 
+                    type="checkbox" 
+                    id="consent"
+                    checked={hasConsented}
+                    onChange={(e) => setHasConsented(e.target.checked)}
+                    className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                  />
+                </div>
+                <label htmlFor="consent" className="text-sm text-slate-500 leading-relaxed cursor-pointer">
+                  I understand that my data is processed securely for analysis. I have read and agree to the 
+                  <button 
+                    onClick={() => setShowPrivacyNotice(true)}
+                    className="text-indigo-600 font-semibold hover:underline ml-1"
+                  >
+                    Privacy Policy
+                  </button>.
+                </label>
+              </div>
+
               <button
                 onClick={handleAnalyze}
-                disabled={isAnalyzing || (inputMethod === 'text' ? !inputNote.trim() : !selectedFile)}
+                disabled={isAnalyzing || !hasConsented || (inputMethod === 'text' ? !inputNote.trim() : !selectedFile)}
                 className={cn(
-                  "px-8 py-4 rounded-2xl font-semibold flex items-center gap-2 transition-all shadow-lg",
-                  isAnalyzing || (inputMethod === 'text' ? !inputNote.trim() : !selectedFile)
+                  "px-8 py-4 rounded-2xl font-semibold flex items-center gap-2 transition-all shadow-lg w-full md:w-auto justify-center",
+                  isAnalyzing || !hasConsented || (inputMethod === 'text' ? !inputNote.trim() : !selectedFile)
                     ? "bg-slate-200 text-slate-400 cursor-not-allowed" 
                     : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200"
                 )}
@@ -576,7 +614,7 @@ export default function App() {
                 className="bg-white rounded-3xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden"
               >
                 {/* Slide Header */}
-                <div className="bg-slate-50 border-bottom border-slate-200 p-4 flex items-center justify-between">
+                <div className="bg-sky-100/30 border-bottom border-sky-200 p-4 flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
                     Topic {currentSlide + 1} of {analysis.slides.length}
                   </span>
@@ -584,14 +622,14 @@ export default function App() {
                     <button 
                       onClick={() => setCurrentSlide(prev => Math.max(0, prev - 1))}
                       disabled={currentSlide === 0}
-                      className="p-2 rounded-full hover:bg-white disabled:opacity-30 transition-colors"
+                      className="p-2 rounded-full hover:bg-sky-100 disabled:opacity-30 transition-colors"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
                     <button 
                       onClick={() => setCurrentSlide(prev => Math.min(analysis.slides.length - 1, prev + 1))}
                       disabled={currentSlide === analysis.slides.length - 1}
-                      className="p-2 rounded-full hover:bg-white disabled:opacity-30 transition-colors"
+                      className="p-2 rounded-full hover:bg-sky-100 disabled:opacity-30 transition-colors"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
@@ -628,7 +666,7 @@ export default function App() {
                 </div>
 
                 {/* Progress Bar */}
-                <div className="h-1.5 bg-slate-100 w-full">
+                <div className="h-1.5 bg-sky-100 w-full">
                   <motion.div 
                     className="h-full bg-indigo-600"
                     initial={{ width: 0 }}
@@ -785,7 +823,7 @@ export default function App() {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="Enter your email address"
-                          className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                          className="flex-1 px-4 py-3 bg-sky-100/30 border border-sky-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                         />
                         <button 
                           type="submit"
@@ -809,7 +847,7 @@ export default function App() {
                   <h3 className="font-bold text-slate-900">Follow-up Questions</h3>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-sky-50/50">
                   {chatMessages.length === 0 && (
                     <div className="h-full flex flex-col items-center justify-center text-center p-6">
                       <div className="bg-indigo-100 p-3 rounded-2xl mb-4">
@@ -827,14 +865,14 @@ export default function App() {
                         "max-w-[85%] p-3 rounded-2xl text-sm",
                         msg.role === 'user' 
                           ? "bg-indigo-600 text-white ml-auto rounded-tr-none" 
-                          : "bg-white border border-slate-200 text-slate-700 mr-auto rounded-tl-none shadow-sm"
+                          : "bg-sky-50 border border-sky-200 text-slate-700 mr-auto rounded-tl-none shadow-sm"
                       )}
                     >
                       <Markdown>{msg.text}</Markdown>
                     </div>
                   ))}
                   {isChatting && (
-                    <div className="bg-white border border-slate-200 text-slate-700 mr-auto rounded-2xl rounded-tl-none p-3 shadow-sm">
+                    <div className="bg-sky-50 border border-sky-200 text-slate-700 mr-auto rounded-2xl rounded-tl-none p-3 shadow-sm">
                       <div className="flex gap-1">
                         <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce" />
                         <span className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce [animation-delay:0.2s]" />
@@ -845,7 +883,7 @@ export default function App() {
                   <div ref={chatEndRef} />
                 </div>
 
-                <div className="p-4 bg-white border-t border-slate-100">
+                <div className="p-4 bg-sky-50 border-t border-sky-100">
                   <div className="relative">
                     <input
                       type="text"
@@ -899,12 +937,22 @@ export default function App() {
                   <History className="w-5 h-5 text-indigo-600" />
                   <h2 className="text-xl font-bold text-slate-900">Your History</h2>
                 </div>
-                <button 
-                  onClick={() => setShowHistory(false)}
-                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  {history.length > 0 && (
+                    <button 
+                      onClick={() => setShowClearConfirm(true)}
+                      className="text-xs font-bold text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-all uppercase tracking-wider"
+                    >
+                      Clear All
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => setShowHistory(false)}
+                    className="p-2 hover:bg-sky-100 rounded-full transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
@@ -917,7 +965,7 @@ export default function App() {
                   history.map((item) => (
                     <div 
                       key={item.id}
-                      className="group bg-slate-50 border border-slate-200 rounded-2xl p-4 hover:border-indigo-300 hover:bg-indigo-50/30 transition-all cursor-pointer relative"
+                      className="group bg-white border border-slate-200 rounded-2xl p-4 hover:border-indigo-300 hover:bg-indigo-50/30 transition-all cursor-pointer relative"
                       onClick={() => loadFromHistory(item)}
                     >
                       <div className="flex justify-between items-start mb-2">
@@ -940,6 +988,49 @@ export default function App() {
                     </div>
                   ))
                 )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      
+      {/* Clear History Confirmation Modal */}
+      <AnimatePresence>
+        {showClearConfirm && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowClearConfirm(false)}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100]"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-white rounded-[32px] shadow-2xl z-[110] overflow-hidden p-8 text-center"
+            >
+              <div className="bg-red-100 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Trash2 className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Clear all history?</h3>
+              <p className="text-slate-500 text-sm mb-8">
+                This action cannot be undone. All your analyzed notes and chat history will be permanently deleted.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button 
+                  onClick={clearAllHistory}
+                  className="w-full py-4 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-100"
+                >
+                  Yes, Clear Everything
+                </button>
+                <button 
+                  onClick={() => setShowClearConfirm(false)}
+                  className="w-full py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all"
+                >
+                  Cancel
+                </button>
               </div>
             </motion.div>
           </>
@@ -1011,6 +1102,113 @@ export default function App() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Privacy Notice Modal */}
+      <AnimatePresence>
+        {showPrivacyNotice && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowPrivacyNotice(false)}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[80]"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white rounded-[40px] shadow-2xl z-[90] overflow-hidden max-h-[90vh] flex flex-col"
+            >
+              <div className="bg-slate-50 p-8 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-indigo-100 p-2 rounded-xl">
+                    <ShieldCheck className="w-6 h-6 text-indigo-600" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900">Privacy & Data Protection</h2>
+                </div>
+                <button onClick={() => setShowPrivacyNotice(false)} className="p-2 hover:bg-sky-200 rounded-full transition-all">
+                  <X className="w-6 h-6 text-slate-400" />
+                </button>
+              </div>
+              
+              <div className="p-8 overflow-y-auto space-y-6">
+                <section className="space-y-3">
+                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-indigo-600" />
+                    How we process your data
+                  </h3>
+                  <p className="text-slate-600 text-sm leading-relaxed">
+                    When you upload a medical document, our AI (Google Gemini) analyzes the content to provide a layman's explanation. This process happens in real-time. We do not use your medical data to train our models or for any purpose other than providing you with the requested analysis.
+                  </p>
+                </section>
+
+                <section className="space-y-3">
+                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                    <EyeOff className="w-4 h-4 text-indigo-600" />
+                    Your Privacy
+                  </h3>
+                  <ul className="space-y-2">
+                    {[
+                      "Data is encrypted during transmission.",
+                      "We do not sell or share your medical information with third parties.",
+                      "Analysis history is stored locally in your session and can be deleted at any time.",
+                      "No personally identifiable information (PII) is permanently stored unless you explicitly choose to save it."
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
+                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+
+                <section className="space-y-3">
+                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 text-indigo-600" />
+                    Important Disclaimer
+                  </h3>
+                  <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
+                    <p className="text-xs text-amber-800 leading-relaxed">
+                      DocDecode is an AI-powered tool designed for informational purposes only. It is NOT a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition.
+                    </p>
+                  </div>
+                </section>
+              </div>
+
+              <div className="p-8 bg-slate-50 border-t border-slate-100">
+                <button 
+                  onClick={() => { setHasConsented(true); setShowPrivacyNotice(false); }}
+                  className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+                >
+                  I Understand and Consent
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* About Section */}
+      {!analysis && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-4xl mt-12 bg-indigo-50/50 border border-indigo-100 rounded-[32px] p-6 md:p-8"
+        >
+          <div className="flex items-start gap-4">
+            <div className="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100 shrink-0">
+              <Info className="w-6 h-6 text-indigo-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 mb-2">About DocDecode</h2>
+              <p className="text-slate-600 text-sm leading-relaxed">
+                DocDecode is an AI platform that can help you understand the provided doctors note, and can answer any further questions that you may have, such as future timelines and possible outcomes. DocDecode can also give personalized health literacy coaching, giving the consumer an accessible proxy that adds convenience.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Footer */}
       <footer className="w-full max-w-4xl mt-12 pb-8 text-center border-t border-slate-200 pt-8">

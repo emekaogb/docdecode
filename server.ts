@@ -56,6 +56,15 @@ async function startServer() {
     res.json({ success: true, message: "Report sent successfully to " + email });
   });
 
+  app.delete("/api/history", (req, res) => {
+    try {
+      db.prepare("DELETE FROM history").run();
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to clear history" });
+    }
+  });
+
   app.delete("/api/history/:id", (req, res) => {
     try {
       db.prepare("DELETE FROM history WHERE id = ?").run(req.params.id);
