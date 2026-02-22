@@ -1,22 +1,22 @@
-## 🧠 DocDecode
+## DocDecode
 
 **DocDecode** is an AI-powered platform that simplifies medical discharge notes, imaging reports (like X-rays), and other clinical documents into clear, patient-friendly explanations. It aims to improve health literacy, reduce confusion after hospital visits, and empower patients to better understand their care.
 
 ---
 
-## 🚀 Features
+## Features
 
-### 🧾 Plain-Language Discharge Summaries
+### Plain-Language Discharge Summaries
 
 * Converts complex discharge notes into easy-to-understand summaries
 * Highlights diagnoses, medications, follow-ups, and warning signs
 
-### 🩻 Imaging & Lab Report Explanation
+### Imaging & Lab Report Explanation
 
 * Explains X-ray, CT, MRI, and lab reports in simple terms
 * Provides visual annotations and definitions of medical terminology
 
-### 🔒 Privacy-First Design
+### Privacy-First Design
 
 * Minimal data retention (auto-delete uploads)
 * Encryption in transit and at rest
@@ -24,7 +24,7 @@
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 **Frontend**
 
@@ -43,7 +43,7 @@
 
 ---
 
-## 🛡️ Privacy & HIPAA Considerations
+## Privacy & HIPAA Considerations
 
 DocDecode is designed with HIPAA-aligned principles:
 
@@ -56,7 +56,7 @@ DocDecode is designed with HIPAA-aligned principles:
 
 ---
 
-## ⚙️ Tech Stack
+## Tech Stack
 
 * **Frontend:** React, Tailwind CSS
 * **Backend:** Node.js + Express
@@ -65,13 +65,13 @@ DocDecode is designed with HIPAA-aligned principles:
 
 ---
 
-## ⚠️ Disclaimer
+## Disclaimer
 
 DocDecode does not provide medical advice. Always consult a licensed healthcare provider for diagnosis and treatment decisions.
 
 ---
 
-## 👩‍💻 Contributors
+## Contributors
 
 * Emeka Ogbuachi
 * X
