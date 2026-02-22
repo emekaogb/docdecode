@@ -45,6 +45,6 @@ DocDecode is designed with HIPAA-aligned principles:
 ## Contributors
 
 * Emeka Ogbuachi
-* X
-* X
-* X
+* Carmen Davis
+* Malik Jangha
+* Shelby Barnes
