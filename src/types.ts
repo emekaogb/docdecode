@@ -15,9 +15,18 @@ export interface ExplanationSlide {
   laymanSummary: string;
 }
 
+export interface NearbyPlace {
+  name: string;
+  address: string;
+  uri: string;
+}
+
 export interface DischargeAnalysis {
   slides: ExplanationSlide[];
   overallSummary: string;
+  demographicInsights?: string;
+  nearbyFollowUp?: NearbyPlace[];
+  reminders?: { title: string; date: string; description: string }[];
 }
 
 export interface Message {

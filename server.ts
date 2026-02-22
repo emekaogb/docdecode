@@ -44,6 +44,18 @@ async function startServer() {
     }
   });
 
+  app.post("/api/send-report", (req, res) => {
+    const { email, analysis } = req.body;
+    // In a real app, you would use a service like Resend, SendGrid, or Mailgun here.
+    // Example with a hypothetical service:
+    // await resend.emails.send({ from: 'reports@docdecode.com', to: email, subject: 'Your Medical Report', html: ... });
+    
+    console.log(`[SIMULATED EMAIL] Sending comprehensive report to ${email}`);
+    console.log(`Report Content:`, analysis.overallSummary);
+    
+    res.json({ success: true, message: "Report sent successfully to " + email });
+  });
+
   app.delete("/api/history/:id", (req, res) => {
     try {
       db.prepare("DELETE FROM history WHERE id = ?").run(req.params.id);

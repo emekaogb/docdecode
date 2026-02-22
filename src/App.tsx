@@ -43,6 +43,14 @@ export default function App() {
   const [chatSession, setChatSession] = useState<any>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [email, setEmail] = useState('');
+  const [isSendingReport, setIsSendingReport] = useState(false);
+  const [reportSent, setReportSent] = useState(false);
+  const [showReportPrompt, setShowReportPrompt] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [demographics, setDemographics] = useState({ age: '', gender: '', location: '' });
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -97,6 +105,28 @@ export default function App() {
     setCurrentSlide(0);
     setChatMessages([]);
     setShowHistory(false);
+    setReportSent(false);
+    setShowReportPrompt(false);
+  };
+
+  const handleSendReport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !analysis) return;
+    setIsSendingReport(true);
+    try {
+      const res = await fetch('/api/send-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, analysis })
+      });
+      if (res.ok) {
+        setReportSent(true);
+      }
+    } catch (error) {
+      console.error("Failed to send report:", error);
+    } finally {
+      setIsSendingReport(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -187,7 +217,11 @@ export default function App() {
         originalText = `Multimodal input (${selectedFile.file.name})`;
       }
 
-      const result = await analyzeDischargeNote(input);
+      const result = await analyzeDischargeNote(
+        input, 
+        isPremium, 
+        isPremium ? { ...demographics, latLng: userLocation || undefined } : undefined
+      );
       setAnalysis(result);
       const session = createChatSession(result, originalText);
       setChatSession(session);
@@ -202,6 +236,34 @@ export default function App() {
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const handleUpgrade = () => {
+    // Simulate payment
+    setIsPremium(true);
+    setShowUpgradeModal(false);
+    
+    // Get location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+        },
+        (error) => console.error("Error getting location:", error)
+      );
+    }
+  };
+
+  const syncToCalendar = (reminder: { title: string; date: string; description: string }) => {
+    // In a real app, this would use Google Calendar API
+    // For now, we generate a .ics file or a Google Calendar link
+    const startTime = new Date().toISOString().replace(/-|:|\.\d+/g, '');
+    const endTime = new Date(Date.now() + 3600000).toISOString().replace(/-|:|\.\d+/g, '');
+    const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(reminder.title)}&dates=${startTime}/${endTime}&details=${encodeURIComponent(reminder.description)}&sf=true&output=xml`;
+    window.open(url, '_blank');
   };
 
   const handleSendMessage = async () => {
@@ -248,6 +310,20 @@ export default function App() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">DocDecode</h1>
         </div>
         <div className="flex items-center gap-4">
+          {!isPremium && (
+            <button 
+              onClick={() => setShowUpgradeModal(true)}
+              className="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-orange-100 hover:scale-105 transition-all flex items-center gap-2"
+            >
+              <ArrowRight className="w-4 h-4" />
+              Go Premium
+            </button>
+          )}
+          {isPremium && (
+            <div className="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
+              Premium
+            </div>
+          )}
           <button 
             onClick={() => setShowHistory(true)}
             className="text-sm font-medium text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition-colors"
@@ -275,11 +351,55 @@ export default function App() {
             className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 md:p-8"
           >
             <div className="mb-8">
-              <h2 className="text-xl font-semibold mb-2">How would you like to provide your note?</h2>
-              <p className="text-slate-500 text-sm">Choose the most convenient way to upload your medical document.</p>
+              <h2 className="text-xl font-semibold mb-2">How would you like to provide your medical document?</h2>
+              <p className="text-slate-500 text-sm">Upload discharge notes, X-rays, or lab charts to get a simple explanation.</p>
             </div>
 
             {/* Input Method Tabs */}
+            {isPremium && (
+              <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4 p-6 bg-indigo-50/50 rounded-3xl border border-indigo-100">
+                <div className="col-span-full mb-2">
+                  <h3 className="text-sm font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-2">
+                    <History className="w-4 h-4" />
+                    Demographic Context (Premium)
+                  </h3>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-indigo-400 uppercase mb-1">Age</label>
+                  <input 
+                    type="number" 
+                    value={demographics.age}
+                    onChange={(e) => setDemographics({...demographics, age: e.target.value})}
+                    placeholder="e.g. 45"
+                    className="w-full px-3 py-2 bg-white border border-indigo-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-indigo-400 uppercase mb-1">Gender</label>
+                  <select 
+                    value={demographics.gender}
+                    onChange={(e) => setDemographics({...demographics, gender: e.target.value})}
+                    className="w-full px-3 py-2 bg-white border border-indigo-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="">Select...</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-indigo-400 uppercase mb-1">Location</label>
+                  <input 
+                    type="text" 
+                    value={demographics.location}
+                    onChange={(e) => setDemographics({...demographics, location: e.target.value})}
+                    placeholder="e.g. New York, NY"
+                    className="w-full px-3 py-2 bg-white border border-indigo-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="flex p-1 bg-slate-100 rounded-2xl mb-8">
               {[
                 { id: 'text', icon: TypeIcon, label: 'Text' },
@@ -356,7 +476,7 @@ export default function App() {
                         <Upload className="w-8 h-8 text-indigo-600" />
                       </div>
                       <p className="font-bold text-slate-900">Click to upload</p>
-                      <p className="text-sm text-slate-500 mt-1">PDF or Image (JPG, PNG)</p>
+                      <p className="text-sm text-slate-500 mt-1">PDF, X-ray, or Chart (JPG, PNG)</p>
                     </>
                   )}
                 </div>
@@ -367,7 +487,7 @@ export default function App() {
                   {!isCameraActive && !selectedFile && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-8 text-center">
                       <Camera className="w-12 h-12 mb-4 opacity-50" />
-                      <p className="font-semibold mb-4">Take a photo of your discharge papers</p>
+                      <p className="font-semibold mb-4">Take a photo of your discharge papers, X-ray, or chart</p>
                       <button 
                         onClick={startCamera}
                         className="bg-indigo-600 px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all"
@@ -532,6 +652,153 @@ export default function App() {
                   {analysis.overallSummary}
                 </p>
               </motion.div>
+
+              {/* Premium Insights */}
+              {isPremium && (
+                <>
+                  {analysis.demographicInsights && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-indigo-600 text-white rounded-3xl p-6 shadow-xl shadow-indigo-100"
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <History className="w-5 h-5" />
+                        <h4 className="font-bold uppercase tracking-wider text-xs">Demographic Insights</h4>
+                      </div>
+                      <p className="leading-relaxed text-indigo-50">
+                        {analysis.demographicInsights}
+                      </p>
+                    </motion.div>
+                  )}
+
+                  {analysis.reminders && analysis.reminders.length > 0 && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-white border border-slate-200 rounded-3xl p-6"
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <Clock className="w-5 h-5 text-indigo-600" />
+                        <h4 className="font-bold text-slate-900 uppercase tracking-wider text-xs">Upcoming Reminders</h4>
+                      </div>
+                      <div className="space-y-3">
+                        {analysis.reminders.map((rem, i) => (
+                          <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                            <div>
+                              <p className="font-bold text-slate-900 text-sm">{rem.title}</p>
+                              <p className="text-xs text-slate-500">{rem.date}</p>
+                            </div>
+                            <button 
+                              onClick={() => syncToCalendar(rem)}
+                              className="text-xs font-bold text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-all"
+                            >
+                              Sync to Calendar
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {analysis.nearbyFollowUp && analysis.nearbyFollowUp.length > 0 && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-white border border-slate-200 rounded-3xl p-6"
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <Stethoscope className="w-5 h-5 text-indigo-600" />
+                        <h4 className="font-bold text-slate-900 uppercase tracking-wider text-xs">Nearby Follow-up Places</h4>
+                      </div>
+                      <div className="space-y-3">
+                        {analysis.nearbyFollowUp.map((place, i) => (
+                          <a 
+                            key={i} 
+                            href={place.uri} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100 hover:border-indigo-300 transition-all group"
+                          >
+                            <div>
+                              <p className="font-bold text-slate-900 text-sm">{place.name}</p>
+                              <p className="text-xs text-slate-500">{place.address}</p>
+                            </div>
+                            <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-600 transition-all" />
+                          </a>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </>
+              )}
+
+              {/* Finish Session / Report Prompt */}
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6"
+              >
+                {!showReportPrompt ? (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-slate-900">Finished with your session?</h4>
+                      <p className="text-sm text-slate-500">Get a comprehensive report sent to your email for later reference.</p>
+                    </div>
+                    <button 
+                      onClick={() => setShowReportPrompt(true)}
+                      className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100"
+                    >
+                      Finish & Get Report
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-slate-900">Comprehensive Report</h4>
+                      <button 
+                        onClick={() => setShowReportPrompt(false)}
+                        className="text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                    
+                    {reportSent ? (
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center gap-3"
+                      >
+                        <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                        <div>
+                          <p className="font-bold text-emerald-900">Report Sent!</p>
+                          <p className="text-sm text-emerald-700">A copy has been sent to <strong>{email}</strong>.</p>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <form onSubmit={handleSendReport} className="flex gap-2">
+                        <input 
+                          type="email" 
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="Enter your email address"
+                          className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                        />
+                        <button 
+                          type="submit"
+                          disabled={isSendingReport}
+                          className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all disabled:opacity-50"
+                        >
+                          {isSendingReport ? "Sending..." : "Send Report"}
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                )}
+              </motion.div>
             </div>
 
             {/* Chat Section */}
@@ -549,7 +816,7 @@ export default function App() {
                         <Info className="w-6 h-6 text-indigo-600" />
                       </div>
                       <p className="text-slate-500 text-sm">
-                        Ask anything about your discharge note. For example: "What medications should I avoid?" or "When can I start exercising?"
+                        Ask anything about your document. For example: "What does this value mean?" or "Are there any abnormalities in the X-ray?"
                       </p>
                     </div>
                   )}
@@ -673,6 +940,72 @@ export default function App() {
                     </div>
                   ))
                 )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Upgrade Modal */}
+      <AnimatePresence>
+        {showUpgradeModal && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowUpgradeModal(false)}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60]"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white rounded-[40px] shadow-2xl z-[70] overflow-hidden"
+            >
+              <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-12 text-white text-center relative">
+                <div className="absolute top-6 right-6">
+                  <button onClick={() => setShowUpgradeModal(false)} className="p-2 hover:bg-white/10 rounded-full transition-all">
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                <div className="bg-white/20 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
+                  <Stethoscope className="w-10 h-10 text-white" />
+                </div>
+                <h2 className="text-4xl font-serif font-bold mb-4 italic">DocDecode Premium</h2>
+                <p className="text-indigo-100 text-lg">Unlock deeper insights and personalized care.</p>
+              </div>
+              
+              <div className="p-10 space-y-8">
+                <div className="space-y-4">
+                  {[
+                    { icon: History, title: "Demographic Analysis", desc: "Comparative insights based on your age and location." },
+                    { icon: Clock, title: "Calendar Sync", desc: "Automatically sync follow-ups and medication reminders." },
+                    { icon: Stethoscope, title: "Nearby Care Finder", desc: "Find the best specialists and clinics near you." }
+                  ].map((feature, i) => (
+                    <div key={i} className="flex gap-4">
+                      <div className="bg-indigo-50 p-3 rounded-2xl h-fit">
+                        <feature.icon className="w-5 h-5 text-indigo-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-900">{feature.title}</h4>
+                        <p className="text-sm text-slate-500">{feature.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-4">
+                  <button 
+                    onClick={handleUpgrade}
+                    className="w-full py-5 bg-indigo-600 text-white rounded-3xl font-black text-lg shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:scale-[1.02] transition-all"
+                  >
+                    Upgrade Now — $9.99/mo
+                  </button>
+                  <p className="text-center text-[10px] text-slate-400 mt-4 uppercase tracking-widest font-bold">
+                    Cancel anytime • Secure payment
+                  </p>
+                </div>
               </div>
             </motion.div>
           </>

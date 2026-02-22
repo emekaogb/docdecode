@@ -1,5 +1,5 @@
 {
   "name": "DocDecode",
-  "description": "Simplifies complex medical discharge notes into easy-to-understand layman's terms using AI.",
-  "requestFramePermissions": ["camera"]
+  "description": "Simplifies complex medical discharge notes, X-rays, and charts into easy-to-understand layman's terms using AI.",
+  "requestFramePermissions": ["camera", "geolocation"]
 }
