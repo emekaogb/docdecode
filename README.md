@@ -42,12 +42,6 @@ DocDecode is designed with HIPAA-aligned principles:
 
 ---
 
-## Disclaimer
-
-DocDecode does not provide medical advice. Always consult a licensed healthcare provider for diagnosis and treatment decisions.
-
----
-
 ## Contributors
 
 * Emeka Ogbuachi
