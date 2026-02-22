@@ -1,20 +1,79 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+## 🧠 DocDecode
 
-# Run and deploy your AI Studio app
+**DocDecode** is an AI-powered platform that simplifies medical discharge notes, imaging reports (like X-rays), and other clinical documents into clear, patient-friendly explanations. It aims to improve health literacy, reduce confusion after hospital visits, and empower patients to better understand their care.
 
-This contains everything you need to run your app locally.
+---
 
-View your app in AI Studio: https://ai.studio/apps/061ac311-2f1c-42f3-a942-a6ec2aa2cb12
+## 🚀 Features
 
-## Run Locally
+### 🧾 Plain-Language Discharge Summaries
 
-**Prerequisites:**  Node.js
+* Converts complex discharge notes into easy-to-understand summaries
+* Highlights diagnoses, medications, follow-ups, and warning signs
 
+### 🩻 Imaging & Lab Report Explanation
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+* Explains X-ray, CT, MRI, and lab reports in simple terms
+* Provides visual annotations and definitions of medical terminology
+
+### 🔒 Privacy-First Design
+
+* Minimal data retention (auto-delete uploads)
+* Encryption in transit and at rest
+* No AI training on patient data
+
+---
+
+## 🏗️ System Architecture
+
+**Frontend**
+
+* React / Next.js UI for document upload and explanation display
+
+**Backend**
+
+* Secure API server (Express / SQLite3)
+* Temporary encrypted storage bucket for uploads
+* AI processing layer for summarization and explanation
+
+**AI Layer**
+
+* Large language model with PHI-safe configuration
+* Retrieval-based explanation to reduce hallucinations
+
+---
+
+## 🛡️ Privacy & HIPAA Considerations
+
+DocDecode is designed with HIPAA-aligned principles:
+
+* Data minimization: only necessary information is processed
+* Role-based access controls and session timeouts
+* Automatic deletion of patient files after processing
+* Explicit patient consent and disclaimers
+
+> DocDecode is a clinical decision support and education tool, not a medical provider.
+
+---
+
+## ⚙️ Tech Stack
+
+* **Frontend:** React, Tailwind CSS
+* **Backend:** Node.js + Express
+* **AI:** Google Gemini 3 
+* **Storage:** SQLite3
+
+---
+
+## ⚠️ Disclaimer
+
+DocDecode does not provide medical advice. Always consult a licensed healthcare provider for diagnosis and treatment decisions.
+
+---
+
+## 👩‍💻 Contributors
+
+* Emeka Ogbuachi
+* X
+* X
+* X
